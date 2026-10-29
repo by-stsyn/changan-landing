@@ -63,3 +63,26 @@ test("vehicle attribute localization converts raw feed values to Russian", () =>
   assert.equal(formatEngineVolume("1494"), "1.5 л");
   assert.equal(formatEngineVolume(1987), "2.0 л");
 });
+
+test("deployment configuration includes .htaccess SPA routing and proxy rules", async () => {
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+
+  // Verify .htaccess exists in public and contains SPA rewrite & proxy.php rule
+  const htaccessPublic = fs.readFileSync(path.resolve(process.cwd(), "public/.htaccess"), "utf-8");
+  assert.match(htaccessPublic, /RewriteEngine\s+On/i);
+  assert.match(htaccessPublic, /proxy\.php/i);
+  assert.match(htaccessPublic, /index\.html/i);
+
+  // Verify proxy.php exists in public and has Changan filtering
+  const proxyContent = fs.readFileSync(path.resolve(process.cwd(), "public/proxy.php"), "utf-8");
+  assert.match(proxyContent, /filter_changan_vehicles/);
+  assert.match(proxyContent, /maxposter\.ru/);
+  assert.match(proxyContent, /changan-feed\.xml/);
+
+  // Verify .gitignore exists and ignores node_modules and .env
+  const gitignoreContent = fs.readFileSync(path.resolve(process.cwd(), ".gitignore"), "utf-8");
+  assert.match(gitignoreContent, /node_modules\//);
+  assert.match(gitignoreContent, /\.env/);
+});
+

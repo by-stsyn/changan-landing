@@ -1,0 +1,46 @@
+name: Deploy to Reg.ru (sale.pragmatika-changanauto.ru)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      # Опциональный шаг: автоматическая выгрузка на хостинг Reg.ru по FTP
+      # Для включения добавьте в Settings -> Secrets and variables -> Actions:
+      # REG_RU_FTP_SERVER (например: ftp.pragmatika-changanauto.ru или IP сервера Reg.ru)
+      # REG_RU_FTP_USERNAME (логин от FTP в панели Reg.ru)
+      # REG_RU_FTP_PASSWORD (пароль от FTP)
+      - name: Deploy to Reg.ru via FTP
+        if: ${{ env.FTP_SERVER != '' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        env:
+          FTP_SERVER: ${{ secrets.REG_RU_FTP_SERVER }}
+        with:
+          server: ${{ secrets.REG_RU_FTP_SERVER }}
+          username: ${{ secrets.REG_RU_FTP_USERNAME }}
+          password: ${{ secrets.REG_RU_FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: ./public_html/
+          dangerous-clean-slate: false
