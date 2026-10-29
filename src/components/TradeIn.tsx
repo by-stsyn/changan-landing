@@ -10,8 +10,9 @@ import {
   IconArrowRight,
 } from "./icons/AutoIcons";
 import { formatPrice } from "../utils/format";
-import { sendToCalltouch } from "./calltouch";
 import PhoneInput from "./PhoneInput";
+import { isPhoneValid } from "../utils/phoneMask";
+import { submitApplication } from "../utils/submitLead";
 
 const BRANDS = [
   "Kia", "Hyundai", "Toyota", "Volkswagen", "BMW", "Mercedes",
@@ -59,64 +60,40 @@ export default function TradeIn() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
 
+  const phoneReady = isPhoneValid(phone);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!phone.trim() || !consent) return;
+    if (!phoneReady || !consent) return;
 
     const carTitle = `Трейд-ин: ${brand || "авто"} ${year || "год не указан"}, пробег ${formatPrice(mileage).replace("₽", "км")}`;
-
-    // CALLTOUCH
-    try {
-      sendToCalltouch({
-        fio: name || "Не указано",
-        phone,
-        subject: "Changan Купчино | Оценка Trade-in",
-        comment: `Форма: Trade-in | ${carTitle}`,
-        tags: "changan_kupchino,tradein",
-      });
-    } catch (err) {
-      console.warn("Calltouch error:", err);
-    }
 
     setIsSubmitting(true);
     setIsError(false);
 
     try {
-      // Web3Forms API
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          access_key: "5cc58f38-0192-4892-9491-bc506437ed33",
-          subject: "🔔 Changan Купчино | Заявка на оценку Trade-in",
-          from_name: "Сайт Changan Купчино",
-          "Тип формы": "Оценка Трейд-ин",
-          "Имя клиента": name || "Не указано",
-          "Телефон клиента": phone,
+      const ok = await submitApplication({
+        name,
+        phone,
+        formType: "Оценка Трейд-ин",
+        subject: "🔔 Changan Купчино | Заявка на оценку Trade-in",
+        calltouchSubject: "Changan Купчино | Оценка Trade-in",
+        calltouchComment: `Форма: Trade-in | ${carTitle}`,
+        calltouchTags: "changan_kupchino,tradein",
+        carTitle,
+        extraFields: {
           "Марка авто (сдаваемая)": brand || "Не указана",
           "Год выпуска": year || "Не указан",
           "Пробег": `${mileage.toLocaleString("ru-RU")} км`,
-        }),
+        },
       });
 
-      const result = await response.json();
-
-      if (response.status === 200) {
+      if (ok) {
         setIsSuccess(true);
-
-        // Яндекс.Метрика
-        if (typeof window !== "undefined" && (window as any).ym) {
-          (window as any).ym(108557355, "reachGoal", "forma");
-        }
       } else {
-        console.error("Web3Forms Error:", result);
         setIsError(true);
       }
-    } catch (error) {
-      console.error("Fetch Error:", error);
+    } catch {
       setIsError(true);
     } finally {
       setIsSubmitting(false);
@@ -315,8 +292,13 @@ export default function TradeIn() {
 
                   {/* Согласие */}
                   <label className="flex items-start gap-2 cursor-pointer select-none pt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                      className="sr-only"
+                    />
                     <div
-                      onClick={() => setConsent((v) => !v)}
                       className={`mt-0.5 w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
                         consent
                           ? "bg-orange-600 border-orange-600 text-white"
@@ -339,10 +321,12 @@ export default function TradeIn() {
                       Согласен на{" "}
                       <a
                         href="/privacy-policy.pdf"
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="underline hover:text-zinc-200 transition-colors"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.dispatchEvent(new CustomEvent("open-privacy-modal"));
+                        }}
                       >
                         обработку данных
                       </a>{" "}
@@ -359,7 +343,7 @@ export default function TradeIn() {
                   {/* CTA кнопка */}
                   <button
                     type="submit"
-                    disabled={isSubmitting || !phone.trim() || !consent}
+                    disabled={isSubmitting || !phoneReady || !consent}
                     className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-md transition-all duration-200 shadow-lg shadow-black/50 border-t border-white/20 flex items-center justify-center gap-2 text-xs sm:text-sm tracking-wide group"
                   >
                     {isSubmitting ? (

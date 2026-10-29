@@ -99,9 +99,14 @@ export default function Calculator() {
             </div>
 
             <div>
-              <label className="flex items-center gap-3 cursor-pointer mb-3">
+              <label className="flex items-center gap-3 cursor-pointer mb-3 select-none">
+                <input
+                  type="checkbox"
+                  checked={hasTradeIn}
+                  onChange={(e) => setHasTradeIn(e.target.checked)}
+                  className="sr-only"
+                />
                 <div
-                  onClick={() => setHasTradeIn(!hasTradeIn)}
                   className={`w-12 h-6 rounded-full transition-colors duration-200 relative cursor-pointer flex-shrink-0 ${hasTradeIn ? "bg-orange-500" : "bg-gray-600"}`}
                 >
                   <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform duration-200 ${hasTradeIn ? "translate-x-6" : "translate-x-0.5"}`} />

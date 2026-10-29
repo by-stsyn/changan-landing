@@ -75,16 +75,14 @@ const MESSAGES = [
 
 export default function SocialProof() {
   const [notification, setNotification] = useState<string | null>(null);
-  const [msgIndex, setMsgIndex] = useState(0);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    let currentIndex = msgIndex;
+    let currentIndex = 0;
 
     const show = () => {
       setNotification(MESSAGES[currentIndex % MESSAGES.length]);
       currentIndex += 1;
-      setMsgIndex(currentIndex);
       setVisible(true);
       setTimeout(() => setVisible(false), 4000);
     };

@@ -1,7 +1,8 @@
 import React, { useState, FormEvent } from "react";
 import { ChevronDown, X, Phone, User, CheckCircle2, Loader2, Gift, Sparkles, ShieldCheck } from "lucide-react";
-import { sendToCalltouch } from "./calltouch";
 import PhoneInput from "./PhoneInput";
+import { isPhoneValid } from "../utils/phoneMask";
+import { submitApplication } from "../utils/submitLead";
 
 interface HeroFloatingIslandProps {
   className?: string;
@@ -16,61 +17,36 @@ export default function HeroFloatingIsland({ className = "" }: HeroFloatingIslan
   const [isSuccess, setIsSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
 
+  const phoneReady = isPhoneValid(phone);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!phone.trim()) return;
-    if (!consent) return;
-
-    // Calltouch integration
-    try {
-      sendToCalltouch({
-        fio: name || "Не указано",
-        phone,
-        subject: "Changan Купчино | Экспресс-бронь выгоды (Баннер)",
-        comment: "Заявка с интерактивной формы баннера Hero Changan Купчино",
-        tags: "hero_island_lead,changan_kupchino",
-      });
-    } catch (err) {
-      console.warn("Calltouch warning:", err);
-    }
+    if (!phoneReady || !consent) return;
 
     setIsSubmitting(true);
     setIsError(false);
 
     try {
-      // Web3Forms API submission
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          access_key: "5cc58f38-0192-4892-9491-bc506437ed33",
-          subject: "⚡ Changan Купчино | Экспресс-бронь выгоды до 800 000 ₽ (Баннер)",
-          from_name: "Сайт Changan Купчино",
-          "Тип формы": "Экспресс-бронь выгоды (Баннер)",
-          "Имя клиента": name || "Не указано",
-          "Телефон клиента": phone,
+      const ok = await submitApplication({
+        name,
+        phone,
+        formType: "Экспресс-бронь выгоды (Баннер)",
+        subject: "⚡ Changan Купчино | Экспресс-бронь выгоды до 800 000 ₽ (Баннер)",
+        calltouchSubject: "Changan Купчино | Экспресс-бронь выгоды (Баннер)",
+        calltouchComment: "Заявка с интерактивной формы баннера Hero Changan Купчино",
+        calltouchTags: "hero_island_lead,changan_kupchino",
+        extraFields: {
           "Зафиксированная выгода": "до 800 000 ₽",
           "Подарок": "КАСКО или комплект зимней резины",
-        }),
+        },
       });
 
-      const result = await response.json().catch(() => ({}));
-
-      if (response.ok || response.status === 200 || result.success) {
+      if (ok) {
         setIsSuccess(true);
-        // Yandex Metrika goal
-        if (typeof window !== "undefined" && (window as any).ym) {
-          (window as any).ym(108557355, "reachGoal", "forma");
-        }
       } else {
-        console.error("Web3Forms error response:", result);
         setIsError(true);
       }
-    } catch (err) {
-      console.error("Submission fetch error:", err);
+    } catch {
       setIsError(true);
     } finally {
       setIsSubmitting(false);
@@ -263,8 +239,8 @@ export default function HeroFloatingIsland({ className = "" }: HeroFloatingIslan
               {/* Submit Button: Always vibrant and inviting */}
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.99] text-white font-black py-3.5 rounded-xl transition-all duration-150 shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 text-sm tracking-wide uppercase mt-1 cursor-pointer disabled:opacity-75"
+                disabled={isSubmitting || !phoneReady || !consent}
+                className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.99] text-white font-black py-3.5 rounded-xl transition-all duration-150 shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 text-sm tracking-wide uppercase mt-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>

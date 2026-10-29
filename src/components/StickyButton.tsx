@@ -25,8 +25,8 @@ export default function StickyButton({ onClick }: StickyButtonProps) {
         className="w-12 h-12 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg hover:shadow-green-300/50 flex items-center justify-center transition-all duration-200 hover:scale-110"
         aria-label="Позвонить"
         onClick={() => {
-          if (typeof window !== 'undefined' && (window as any).ym) {
-            (window as any).ym(108557355, 'reachGoal', 'zvonok');
+          if (typeof window !== 'undefined' && window.ym) {
+            window.ym(108557355, 'reachGoal', 'zvonok');
           }
         }}
       >

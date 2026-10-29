@@ -1,7 +1,8 @@
 import { useState, FormEvent } from "react";
 import { Phone, User, CheckCircle, Loader2 } from "lucide-react";
-import { sendToCalltouch } from "../components/calltouch";
 import PhoneInput from "./PhoneInput";
+import { isPhoneValid } from "../utils/phoneMask";
+import { submitApplication } from "../utils/submitLead";
 
 interface LeadFormProps {
   formType: string;
@@ -12,15 +13,23 @@ interface LeadFormProps {
   onSuccess?: () => void;
 }
 
-export default function LeadForm({ formType, submitLabel = "Отправить заявку", dark, carTitle, carId, onSuccess }: LeadFormProps) {
+export default function LeadForm({
+  formType,
+  submitLabel = "Отправить заявку",
+  dark,
+  carTitle,
+  carId,
+  onSuccess,
+}: LeadFormProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
-  
-  // Локальные состояния для Web3Forms вместо Supabase
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
+
+  const phoneReady = isPhoneValid(phone);
 
   const inputClass = `w-full rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 border ${
     dark
@@ -30,64 +39,31 @@ export default function LeadForm({ formType, submitLabel = "Отправить �
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!phone.trim() || !consent) return;
-
-    // 👉 CALLTOUCH (лучшее место — ДО отправки в CRM)
-    try {
-      sendToCalltouch({
-        fio: name || "Не указано",
-        phone,
-        subject: `Changan Купчино | ${formType || "Заявка с формы"}`,
-        comment: `Форма: LeadForm | ${carTitle || ""} | ${carId || ""}`,
-        tags: `changan_kupchino,${formType},${carId || ""}`,
-      });
-    } catch (err) {
-      console.warn("Calltouch error:", err);
-    }
+    if (!phoneReady || !consent) return;
 
     setIsSubmitting(true);
     setIsError(false);
 
     try {
-      // 👉 Web3Forms API
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          // Системные настройки
-          access_key: "5cc58f38-0192-4892-9491-bc506437ed33",
-          subject: `🔔 Changan Купчино | ${formType || "Новая заявка с сайта"}`,
-          from_name: "Сайт Changan Купчино",
-          
-          // Поля, которые увидит менеджер в письме (красивые названия)
-          "Тип формы": formType,
-          "Имя клиента": name || "Не указано",
-          "Телефон клиента": phone,
-          "Интересующий автомобиль": carTitle || "Не указан",
-          "ID автомобиля": carId || "Не указан"
-        }),
+      const ok = await submitApplication({
+        name,
+        phone,
+        formType,
+        subject: `🔔 Changan Купчино | ${formType || "Новая заявка с сайта"}`,
+        calltouchSubject: `Changan Купчино | ${formType || "Заявка с формы"}`,
+        calltouchComment: `Форма: LeadForm (${formType}) | ${carTitle || ""} | ${carId || ""}`,
+        calltouchTags: ["changan_kupchino", formType, carId].filter(Boolean).join(","),
+        carTitle: carTitle || "Не указан",
+        carId: carId || "Не указан",
       });
 
-      const result = await response.json();
-
-      if (response.status === 200) {
+      if (ok) {
         setIsSuccess(true);
-        
-        // Отправляем цель в Метрику при успешной заявке со ВСЕХ форм
-        if (typeof window !== 'undefined' && (window as any).ym) {
-          (window as any).ym(108557355, 'reachGoal', 'forma');
-        }
-        
         if (onSuccess) onSuccess();
       } else {
-        console.error("Web3Forms Error:", result);
         setIsError(true);
       }
-    } catch (error) {
-      console.error("Fetch Error:", error);
+    } catch {
       setIsError(true);
     } finally {
       setIsSubmitting(false);
@@ -131,12 +107,19 @@ export default function LeadForm({ formType, submitLabel = "Отправить �
       </div>
 
       <label className="flex items-start gap-2.5 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+          className="sr-only"
+        />
         <div
-          onClick={() => setConsent((v) => !v)}
           className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all duration-150 cursor-pointer ${
             consent
               ? "bg-orange-500 border-orange-500"
-              : dark ? "border-gray-500 bg-transparent" : "border-gray-300 bg-white"
+              : dark
+              ? "border-gray-500 bg-transparent"
+              : "border-gray-300 bg-white"
           }`}
         >
           {consent && (
@@ -149,10 +132,12 @@ export default function LeadForm({ formType, submitLabel = "Отправить �
           Я даю согласие группе компаний «Прагматика» на{" "}
           <a
             href="/privacy-policy.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
             className={`underline hover:text-orange-500 transition-colors ${dark ? "text-gray-300" : "text-gray-600"}`}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.dispatchEvent(new CustomEvent("open-privacy-modal"));
+            }}
           >
             обработку моих персональных данных
           </a>
@@ -164,7 +149,7 @@ export default function LeadForm({ formType, submitLabel = "Отправить �
       )}
       <button
         type="submit"
-        disabled={isSubmitting || !phone.trim() || !consent}
+        disabled={isSubmitting || !phoneReady || !consent}
         className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-orange-500/30 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm"
       >
         {isSubmitting ? (
@@ -172,7 +157,9 @@ export default function LeadForm({ formType, submitLabel = "Отправить �
             <Loader2 size={16} className="animate-spin" />
             Отправка...
           </>
-        ) : submitLabel}
+        ) : (
+          submitLabel
+        )}
       </button>
     </form>
   );

@@ -15,8 +15,11 @@ export default function Filters({ cars, filters, onChange }: FiltersProps) {
   const globalMin = prices.length ? Math.min(...prices) : 0;
   const globalMax = prices.length ? Math.max(...prices) : 20000000;
 
-  const hasActiveFilters = filters.model !== "" || filters.bodyType !== "" ||
-    filters.priceMin > globalMin || filters.priceMax < globalMax;
+  const hasActiveFilters =
+    filters.model !== "" ||
+    filters.bodyType !== "" ||
+    filters.priceMin > globalMin ||
+    (filters.priceMax > 0 && filters.priceMax < globalMax);
 
   function reset() {
     onChange({ model: "", priceMin: 0, priceMax: 0, bodyType: "" });

@@ -43,11 +43,11 @@ export default function PromoTimerBanner({ onClaim }: PromoTimerBannerProps) {
                 Комплект зимней резины в&nbsp;подарок*
               </h2>
               
-              <div className="text-xs sm:text-sm text-zinc-400 mt-1 flex items-center gap-1.5">
-                <IconDealerSeal className="w-4 h-4 text-orange-500 shrink-0" />
+              <div className="text-xs sm:text-sm text-zinc-400 mt-1 flex items-start sm:items-center gap-1.5">
+                <IconDealerSeal className="w-4 h-4 text-orange-500 shrink-0 mt-0.5 sm:mt-0" />
                 <span>
                   Есть расчёт дешевле?{" "}
-                  <strong className="text-zinc-200 font-semibold whitespace-nowrap">
+                  <strong className="text-zinc-200 font-semibold sm:whitespace-nowrap">
                     Сделаем честное и&nbsp;выгодное предложение
                   </strong>
                 </span>

@@ -56,8 +56,8 @@ export default function FinalCTA() {
                       href="tel:+78127608508" 
                       className="text-orange-400 text-xs hover:text-orange-300 transition-colors"
                       onClick={() => {
-                        if (typeof window !== 'undefined' && (window as any).ym) {
-                          (window as any).ym(108557355, 'reachGoal', 'zvonok');
+                        if (typeof window !== 'undefined' && window.ym) {
+                          window.ym(108557355, 'reachGoal', 'zvonok');
                         }
                       }}
                     >

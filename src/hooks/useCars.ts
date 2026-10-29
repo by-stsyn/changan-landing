@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
 import type { Car } from '../types/car';
+import {
+  formatBodyType,
+  formatTransmission,
+  formatColor,
+  formatEngineVolume,
+} from '../utils/format';
 
 interface UseCarsResult {
   cars: Car[];
@@ -14,7 +20,7 @@ let cachedCars: Car[] = [];
 let hasLoadedCars = false;
 let ongoingFetch: Promise<Car[]> | null = null;
 
-function parseXmlToCars(xmlText: string): Car[] {
+export function parseXmlToCars(xmlText: string): Car[] {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlText, "text/xml");
   const vehicleNodes = xmlDoc.querySelectorAll("vehicle, car, offer, item");
@@ -39,35 +45,41 @@ function parseXmlToCars(xmlText: string): Car[] {
 
     const rawBrand = data["brand"] || data["mark"] || data["make"] || "Unknown";
     const rawModel = data["model"] || data["folder"] || "Unknown";
+    const isHunter = rawModel.toUpperCase().includes("HUNTER");
+
+    const price = parseInt(data["price"], 10) || 0;
+    const tradeinDiscount = isHunter ? 800000 : (parseInt(data["tradeindiscount"], 10) || 0);
+    const creditDiscount = isHunter ? 0 : (parseInt(data["creditdiscount"], 10) || 0);
+    const insuranceDiscount = isHunter ? 0 : (parseInt(data["insurancediscount"], 10) || 0);
+    const totalDiscount = tradeinDiscount + creditDiscount + insuranceDiscount;
+    const rawPriceWithDiscount = parseInt(data["pricewithdiscount"], 10) || 0;
+    const priceWithDiscount = isHunter
+      ? Math.max(price - totalDiscount, 0)
+      : (rawPriceWithDiscount > 0 ? rawPriceWithDiscount : Math.max(price - totalDiscount, 0));
 
     const car: Car = {
       id: data["vin"] || data["id"] || Math.random().toString(),
+      dealer: data["dealer"] || "Changan Центр Прагматика",
       vin: data["vin"] || "",
       brand: rawBrand,
       model: rawModel,
       modification: data["modification"] || "",
-      year: parseInt(data["year"], 10) || 0,
-      price: parseInt(data["price"], 10) || 0,
-      creditDiscount: parseInt(data["creditdiscount"], 10) || 0,
-      tradeinDiscount: parseInt(data["tradeindiscount"], 10) || 0,
-      insuranceDiscount: parseInt(data["insurancediscount"], 10) || 0,
-      photos: photos,
-      bodyType: data["bodytype"] || "",
-      color: data["bodycolor"] || "",
+      year: data["year"] || "",
+      price,
+      priceWithDiscount,
+      creditDiscount,
+      tradeinDiscount,
+      insuranceDiscount,
+      totalDiscount,
+      photos,
+      bodyType: formatBodyType(data["bodytype"] || data["bodyconfiguration"] || ""),
+      color: formatColor(data["bodycolor"] || ""),
       drive: data["drivetype"] || data["drive"] || "",
-      transmission: data["gearboxtype"] || data["gearbox"] || "",
-      fuelType: data["enginetype"] || "",
-      engineVolume: parseFloat(data["enginevolume"]) || 0,
-      enginePower: parseInt(data["enginepower"], 10) || 0,
+      transmission: formatTransmission(data["gearboxtype"] || data["gearbox"] || ""),
+      engineVolume: formatEngineVolume(data["enginevolume"] || ""),
       mileage: parseInt(data["mileage"], 10) || 0,
       complectation: data["complectation"] || data["equipment"] || "",
-      equipment: data["complectation"] || "",
-      ownersCount: parseInt(data["ownerscount"], 10) || 0,
-      condition: data["type"] || "",
-      doorsCount: parseInt(data["bodydoorcount"], 10) || 0,
-      wheel: data["steeringwheel"] || "",
-      pts: data["ptstype"] || "",
-      description: data["description"] || "",
+      availability: data["availability"] || "available",
     };
 
     const brandCheck = car.brand.toLowerCase();

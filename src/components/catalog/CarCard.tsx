@@ -15,12 +15,11 @@ interface DiscountState {
   insurance: boolean;
 }
 
-const getNumber = (val: any): number => {
+const getNumber = (val: unknown): number => {
   if (typeof val === "number") return val;
   if (!val) return 0;
-  // Если парсер вернул объект (например { _: "300000" })
-  const str = typeof val === "object" && val._ ? String(val._) : String(val);
-  // Вырезаем всё, кроме цифр
+  const obj = typeof val === "object" ? (val as Record<string, unknown>) : null;
+  const str = obj && obj._ ? String(obj._) : String(val);
   const cleaned = str.replace(/\D/g, "");
   return Number(cleaned) || 0;
 };

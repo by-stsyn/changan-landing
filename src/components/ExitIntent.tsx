@@ -67,10 +67,10 @@ export default function ExitIntent() {
             <div className="text-orange-700 font-black text-2xl mb-0.5">−100 000 ₽</div>
             <div className="text-orange-600 text-xs font-semibold">дополнительная выгода при заявке прямо сейчас</div>
           </div>
-<LeadForm
+          <LeadForm
             formType="exit_intent"
             submitLabel="Получить выгоду −100 000 ₽"
-            onSuccess={close}
+            onSuccess={() => setTimeout(close, 2500)}
           />
         </div>
       </div>

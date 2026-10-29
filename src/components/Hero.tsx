@@ -44,9 +44,9 @@ export default function Hero({ onScrollToCatalog, onCTAClick, onGetFinalPrice }:
           </div>
 
           {/* Main Headline: High-impact automotive typography */}
-          <h1 className="text-3xl sm:text-4xl lg:text-[46px] font-black tracking-tight text-white leading-[1.12]">
-            Новые Changan <br className="hidden xs:inline sm:inline" />
-            <span className="inline-block mt-1 sm:mt-1.5 text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-amber-300 whitespace-nowrap drop-shadow-sm">
+          <h1 className="text-[26px] sm:text-4xl lg:text-[46px] font-black tracking-tight text-white leading-[1.12]">
+            Новые Changan <br />
+            <span className="inline-block mt-1 sm:mt-1.5 text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-amber-300 sm:whitespace-nowrap drop-shadow-sm">
               с&nbsp;выгодой до&nbsp;800&nbsp;000&nbsp;₽
             </span>
           </h1>
@@ -63,34 +63,34 @@ export default function Hero({ onScrollToCatalog, onCTAClick, onGetFinalPrice }:
           </div>
 
           {/* 3. Key Automotive Metrics */}
-          <div className="flex items-center gap-5 sm:gap-7 py-1">
+          <div className="flex items-center justify-between sm:justify-start gap-3 sm:gap-7 py-1">
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-white tracking-tight whitespace-nowrap">
+              <div className="text-xl sm:text-3xl font-black text-white tracking-tight whitespace-nowrap">
                 от&nbsp;0,01%
               </div>
-              <div className="text-xs text-zinc-400 mt-1 font-normal tracking-wide whitespace-nowrap">
+              <div className="text-[11px] sm:text-xs text-zinc-400 mt-1 font-normal tracking-wide whitespace-nowrap">
                 Кредитная ставка
               </div>
             </div>
 
-            <div className="w-px h-9 bg-white/15" />
+            <div className="w-px h-9 bg-white/15 shrink-0" />
 
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-white tracking-tight whitespace-nowrap">
+              <div className="text-xl sm:text-3xl font-black text-white tracking-tight whitespace-nowrap">
                 0&nbsp;₽
               </div>
-              <div className="text-xs text-zinc-400 mt-1 font-normal tracking-wide whitespace-nowrap">
+              <div className="text-[11px] sm:text-xs text-zinc-400 mt-1 font-normal tracking-wide whitespace-nowrap">
                 Первый взнос
               </div>
             </div>
 
-            <div className="w-px h-9 bg-white/15" />
+            <div className="w-px h-9 bg-white/15 shrink-0" />
 
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-white tracking-tight whitespace-nowrap">
+              <div className="text-xl sm:text-3xl font-black text-white tracking-tight whitespace-nowrap">
                 60+
               </div>
-              <div className="text-xs text-zinc-400 mt-1 font-normal tracking-wide whitespace-nowrap">
+              <div className="text-[11px] sm:text-xs text-zinc-400 mt-1 font-normal tracking-wide whitespace-nowrap">
                 Авто с&nbsp;ЭПТС
               </div>
             </div>

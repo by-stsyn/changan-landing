@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import App from "./App";
 import CarDetailRoute from "./pages/CarDetailRoute";
 import PrivacyPolicyModal from "./components/PrivacyPolicyModal";
+import { persistUtmParams } from "./components/calltouch";
 
 export default function Root() {
   const [path, setPath] = useState(window.location.pathname);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
   useEffect(() => {
+    persistUtmParams();
     // Scroll to top immediately when route changes
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [path]);

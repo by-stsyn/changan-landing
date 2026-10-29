@@ -39,13 +39,17 @@ export default function PhotoSlider({ photos = [], alt }: PhotoSliderProps) {
       {list.length > 1 && (
         <>
           <button
+            type="button"
             onClick={prev}
+            aria-label="Предыдущее фото"
             className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           >
             <ChevronLeft size={16} />
           </button>
           <button
+            type="button"
             onClick={next}
+            aria-label="Следующее фото"
             className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           >
             <ChevronRight size={16} />
@@ -54,7 +58,9 @@ export default function PhotoSlider({ photos = [], alt }: PhotoSliderProps) {
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
             {list.slice(0, 6).map((_, i) => (
               <button
+                type="button"
                 key={i}
+                aria-label={`Фото ${i + 1}`}
                 onClick={(e) => { e.stopPropagation(); setCurrent(i); }}
                 className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${i === current ? "bg-white w-3" : "bg-white/50"}`}
               />

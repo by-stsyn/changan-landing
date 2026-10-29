@@ -81,8 +81,8 @@ export default function Header({ onCTAClick, onScrollToCatalog }: HeaderProps) {
                 href="tel:+78127608508"
                 className="flex items-center gap-2 text-gray-950 font-black hover:text-orange-500 transition-colors"
                 onClick={() => {
-                  if (typeof window !== "undefined" && (window as any).ym) {
-                    (window as any).ym(108557355, "reachGoal", "zvonok");
+                  if (typeof window !== "undefined" && window.ym) {
+                    window.ym(108557355, "reachGoal", "zvonok");
                   }
                 }}
                 aria-label="Позвонить в дилерский центр"

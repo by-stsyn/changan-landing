@@ -20,8 +20,8 @@ export default function Footer() {
                 href="tel:+78127608508" 
                 className="hover:text-orange-500 transition-colors"
                 onClick={() => {
-                  if (typeof window !== 'undefined' && (window as any).ym) {
-                    (window as any).ym(108557355, 'reachGoal', 'zvonok');
+                  if (typeof window !== 'undefined' && window.ym) {
+                    window.ym(108557355, 'reachGoal', 'zvonok');
                   }
                 }}
               >
@@ -56,8 +56,8 @@ export default function Footer() {
               href="tel:+78127608508" 
               className="text-gray-500 hover:text-orange-500 transition-colors"
               onClick={() => {
-                if (typeof window !== 'undefined' && (window as any).ym) {
-                  (window as any).ym(108557355, 'reachGoal', 'zvonok');
+                if (typeof window !== 'undefined' && window.ym) {
+                  window.ym(108557355, 'reachGoal', 'zvonok');
                 }
               }}
             >

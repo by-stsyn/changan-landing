@@ -4,8 +4,9 @@ import { Car } from "../types/car";
 import { formatPrice, formatDrive, getCarTitle } from "../utils/format";
 import PhotoSlider from "../components/catalog/PhotoSlider";
 import Footer from "../components/Footer";
-import { sendToCalltouch } from "../components/calltouch";
 import PhoneInput from "../components/PhoneInput";
+import { isPhoneValid } from "../utils/phoneMask";
+import { submitApplication } from "../utils/submitLead";
 
 const MIN_PRICE = 1500000;
 const MAX_PRICE = 7000000;
@@ -13,12 +14,11 @@ const CREDIT_TERMS =[12, 24, 36, 48, 60, 72, 84];
 const CREDIT_RATE = 0.0001;
 
 // Вспомогательная функция для безопасного парсинга чисел из фида
-const getNumber = (val: any): number => {
+const getNumber = (val: unknown): number => {
   if (typeof val === "number") return val;
   if (!val) return 0;
-  // Если парсер вернул объект (например { _: "300000" })
-  const str = typeof val === "object" && val._ ? String(val._) : String(val);
-  // Вырезаем всё, кроме цифр
+  const obj = typeof val === "object" ? (val as Record<string, unknown>) : null;
+  const str = obj && obj._ ? String(obj._) : String(val);
   const cleaned = str.replace(/\D/g, "");
   return Number(cleaned) || 0;
 };
@@ -37,6 +37,10 @@ function CreditBlock({ carPrice }: { carPrice: number }) {
   const [price, setPrice] = useState(Math.min(Math.max(carPrice, MIN_PRICE), MAX_PRICE));
   const [initialPaymentPct, setInitialPaymentPct] = useState(20);
   const [term, setTerm] = useState(60);
+
+  useEffect(() => {
+    setPrice(Math.min(Math.max(carPrice, MIN_PRICE), MAX_PRICE));
+  }, [carPrice]);
 
   const result = useMemo(() => {
     const initialPayment = Math.round(price * (initialPaymentPct / 100));
@@ -98,8 +102,13 @@ function CreditBlock({ carPrice }: { carPrice: number }) {
 function ConsentCheckbox({ consent, setConsent, dark }: { consent: boolean; setConsent: (v: boolean) => void; dark?: boolean }) {
   return (
     <label className="flex items-start gap-2.5 cursor-pointer select-none">
+      <input
+        type="checkbox"
+        checked={consent}
+        onChange={(e) => setConsent(e.target.checked)}
+        className="sr-only"
+      />
       <div
-        onClick={() => setConsent(!consent)}
         className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all duration-150 cursor-pointer ${
           consent
             ? "bg-orange-500 border-orange-500"
@@ -114,9 +123,15 @@ function ConsentCheckbox({ consent, setConsent, dark }: { consent: boolean; setC
       </div>
       <span className={`text-xs leading-relaxed ${dark ? "text-white/70" : "text-gray-500"}`}>
         Я даю согласие группе компаний «Прагматика» на{" "}
-        <a href="/privacy-policy.pdf" target="_blank" rel="noopener noreferrer"
+        <a
+          href="/privacy-policy.pdf"
           className={`underline hover:text-orange-500 transition-colors ${dark ? "text-white/90" : "text-gray-600"}`}
-          onClick={(e) => e.stopPropagation()}>
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("open-privacy-modal"));
+          }}
+        >
           обработку моих персональных данных
         </a>
       </span>
@@ -128,55 +143,37 @@ function TradeInBlock({ carTitle }: { carTitle: string }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
+  const phoneReady = isPhoneValid(phone);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!consent || !phone.trim()) return;
-
-    // 👉 CALLTOUCH
-    try {
-      sendToCalltouch({
-        fio: name || "Не указано",
-        phone,
-        subject: "Changan Купчино | Trade-in заявка",
-        comment: `Авто: ${carTitle}`,
-        tags: "changan_kupchino,tradein_detail",
-      });
-    } catch (err) {
-      console.warn("Calltouch error:", err);
-    }
+    if (!consent || !phoneReady) return;
 
     setIsSubmitting(true);
     setIsError(false);
 
     try {
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          access_key: "5cc58f38-0192-4892-9491-bc506437ed33",
-          subject: `🔔 Changan Купчино | Trade-in по авто ${carTitle}`,
-          from_name: "Сайт Changan Купчино",
-          "Тип формы": "Трейд-ин (со страницы авто)",
-          "Имя клиента": name || "Не указано",
-          "Телефон клиента": phone,
-          "Интересующий автомобиль": carTitle
-        }),
+      const ok = await submitApplication({
+        name,
+        phone,
+        formType: "Трейд-ин (со страницы авто)",
+        subject: `🔔 Changan Купчино | Trade-in по авто ${carTitle}`,
+        calltouchSubject: "Changan Купчино | Trade-in заявка",
+        calltouchComment: `Авто: ${carTitle}`,
+        calltouchTags: "changan_kupchino,tradein_detail",
+        carTitle,
       });
 
-      if (response.status === 200) {
+      if (ok) {
         setIsSuccess(true);
-        if (typeof window !== 'undefined' && (window as any).ym) {
-          (window as any).ym(108557355, 'reachGoal', 'forma');
-        }
       } else {
         setIsError(true);
       }
-    } catch (error) {
+    } catch {
       setIsError(true);
     } finally {
       setIsSubmitting(false);
@@ -208,7 +205,7 @@ function TradeInBlock({ carTitle }: { carTitle: string }) {
             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-500" />
           <ConsentCheckbox consent={consent} setConsent={setConsent} />
           {isError && <div className="text-red-500 text-xs">Ошибка отправки. Попробуйте ещё раз.</div>}
-          <button type="submit" disabled={isSubmitting || !phone.trim() || !consent}
+          <button type="submit" disabled={isSubmitting || !phoneReady || !consent}
             className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm">
             {isSubmitting ? <><Loader2 size={16} className="animate-spin" />Отправка...</> : "Получить оценку трейд-ин"}
           </button>
@@ -222,57 +219,39 @@ function BookingBlock({ car }: { car: Car }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
   const title = getCarTitle(car);
+  const phoneReady = isPhoneValid(phone);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!consent || !phone.trim()) return;
-
-    // 👉 CALLTOUCH ДО отправки в CRM
-    try {
-      sendToCalltouch({
-        fio: name || "Не указано",
-        phone,
-        subject: "Changan Купчино | Бронирование авто",
-        comment: `Авто: ${title} | ID: ${car.id}`,
-        tags: `changan_kupchino,booking_detail,${car.id || ""}`,
-      });
-    } catch (err) {
-      console.warn("Calltouch error:", err);
-    }
+    if (!consent || !phoneReady) return;
 
     setIsSubmitting(true);
     setIsError(false);
 
     try {
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          access_key: "5cc58f38-0192-4892-9491-bc506437ed33",
-          subject: `🔔 Changan Купчино | Бронирование авто ${title}`,
-          from_name: "Сайт Changan Купчино",
-          "Тип формы": "Бронирование автомобиля (детальная страница)",
-          "Имя клиента": name || "Не указано",
-          "Телефон клиента": phone,
-          "Бронируемый автомобиль": title,
-          "ID автомобиля": car.id || "Не указан"
-        }),
+      const ok = await submitApplication({
+        name,
+        phone,
+        formType: "Бронирование автомобиля (детальная страница)",
+        subject: `🔔 Changan Купчино | Бронирование авто ${title}`,
+        calltouchSubject: "Changan Купчино | Бронирование авто",
+        calltouchComment: `Авто: ${title} | ID: ${car.id}`,
+        calltouchTags: ["changan_kupchino", "booking_detail", car.id].filter(Boolean).join(","),
+        carTitle: title,
+        carId: car.id || "Не указан",
       });
 
-      if (response.status === 200) {
+      if (ok) {
         setIsSuccess(true);
-        if (typeof window !== 'undefined' && (window as any).ym) {
-          (window as any).ym(108557355, 'reachGoal', 'forma');
-        }
       } else {
         setIsError(true);
       }
-    } catch (error) {
+    } catch {
       setIsError(true);
     } finally {
       setIsSubmitting(false);
@@ -297,7 +276,7 @@ function BookingBlock({ car }: { car: Car }) {
             className="w-full bg-white/20 border border-white/30 text-white placeholder-white/60 rounded-xl px-4 py-3 text-sm outline-none focus:border-white" />
           <ConsentCheckbox consent={consent} setConsent={setConsent} dark />
           {isError && <div className="text-red-200 text-xs">Ошибка отправки. Попробуйте ещё раз.</div>}
-          <button type="submit" disabled={isSubmitting || !phone.trim() || !consent}
+          <button type="submit" disabled={isSubmitting || !phoneReady || !consent}
             className="w-full bg-white hover:bg-orange-50 disabled:bg-orange-300 disabled:cursor-not-allowed text-orange-600 font-bold py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm">
             {isSubmitting ? <><Loader2 size={16} className="animate-spin" />Отправка...</> : "Забронировать автомобиль"}
           </button>
@@ -315,10 +294,12 @@ export default function CarDetailPage({ car }: CarDetailPageProps) {
   const [discounts, setDiscounts] = useState<DiscountState>({ tradein: true, credit: true, insurance: true });
   const title = getCarTitle(car);
 
+  const isHunter = String(car.model || "").toUpperCase().includes("HUNTER");
+
   // Надежно парсим все цены как строгие числа
-  const tDiscount = getNumber(car.tradeinDiscount);
-  const cDiscount = getNumber(car.creditDiscount);
-  const iDiscount = getNumber(car.insuranceDiscount);
+  const tDiscount = isHunter ? 800000 : getNumber(car.tradeinDiscount);
+  const cDiscount = isHunter ? 0 : getNumber(car.creditDiscount);
+  const iDiscount = isHunter ? 0 : getNumber(car.insuranceDiscount);
   const bPrice = getNumber(car.price);
 
   const hasDiscounts = tDiscount > 0 || cDiscount > 0 || iDiscount > 0;
@@ -471,7 +452,7 @@ export default function CarDetailPage({ car }: CarDetailPageProps) {
                           <div className="flex items-center gap-2">
                             <input type="checkbox" checked={discounts.tradein} onChange={() => toggle("tradein")}
                               className="w-4 h-4 accent-orange-500 cursor-pointer" />
-                            <span className="text-sm text-gray-700">Трейд-ин</span>
+                            <span className="text-sm text-gray-700">{isHunter ? "Лизинг" : "Трейд-ин"}</span>
                           </div>
                           <span className="text-sm font-bold text-green-600">−{formatPrice(tDiscount)}</span>
                         </label>
@@ -541,8 +522,8 @@ export default function CarDetailPage({ car }: CarDetailPageProps) {
 
               <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                 <h2 className="font-black text-xl text-gray-900 mb-4">Кредит на этот автомобиль</h2>
-                {/* Передаем очищенное число в калькулятор */}
-                <CreditBlock carPrice={bPrice} />
+                {/* Передаем актуальную цену с учётом выбранных скидок */}
+                <CreditBlock carPrice={finalPrice || bPrice} />
               </div>
             </div>
 
