@@ -10,8 +10,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    env:
-      FTP_SERVER: ${{ secrets.REG_RU_FTP_SERVER }}
 
     steps:
       - name: Checkout repository
@@ -28,15 +26,12 @@ jobs:
       - name: Build production bundle
         run: npm run build
 
-      # Шаг выгрузки на Reg.ru по FTP (срабатывает, если в GitHub Secrets указан REG_RU_FTP_SERVER)
-      # Если секреты еще не заданы в репозитории, шаг безопасно пропускается
       - name: Deploy to Reg.ru via FTP
-        if: env.FTP_SERVER != ''
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.REG_RU_FTP_SERVER }}
-          username: ${{ secrets.REG_RU_FTP_USERNAME }}
-          password: ${{ secrets.REG_RU_FTP_PASSWORD }}
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: ./public_html/
+          server-dir: ./
           dangerous-clean-slate: false

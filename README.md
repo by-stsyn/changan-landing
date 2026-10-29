@@ -77,11 +77,11 @@ git push -u origin main
 В файле `.github/workflows/deploy.yml` уже настроен автоматический пайплайн. Чтобы он заработал:
 
 1. Перейдите в ваш репозиторий на GitHub: **Settings** -> **Secrets and variables** -> **Actions** -> **New repository secret**.
-2. Добавьте три секрета (данные берутся в панели Reg.ru -> раздел «FTP-пользователи»):
-   - `REG_RU_FTP_SERVER` — хост FTP (например, `ftp.pragmatika-changanauto.ru` или IP вашего сервера).
-   - `REG_RU_FTP_USERNAME` — логин FTP-пользователя.
-   - `REG_RU_FTP_PASSWORD` — пароль FTP-пользователя.
-3. Теперь при каждом выполнении `git push origin main` GitHub сам автоматически соберет проект и обновит файлы на хостинге Reg.ru.
+2. Секреты (у вас уже добавлены):
+   - `FTP_SERVER` — хост FTP на Reg.ru
+   - `FTP_USERNAME` — логин FTP-пользователя
+   - `FTP_PASSWORD` — пароль FTP-пользователя
+3. Теперь при каждом выполнении `git push origin main` GitHub сам автоматически собирает проект и выгружает файлы на хостинг Reg.ru.
 
 ---
 
